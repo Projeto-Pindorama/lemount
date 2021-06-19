@@ -1,0 +1,42 @@
+#!/bin/ksh
+# lemount - Luiz' extensions for mount
+# This is a prototype made with Korn Shell, probabily i will rewrite this in Go.
+
+root=/
+dev=/dev
+mnt=/mnt
+mount_points=(dsk usb cdrom);
+base_number='0'
+
+main(){
+	printf '%s' 'Creating mount points...' &
+	for (( i=0; i<${#mount_points}; i++ )){
+		mkdir ${root}${mount_points[${i}]};
+	}
+	printf  '%s\n\n' 'done.'
+	echo 'Available disks:';
+	fdisk -l;
+	printf '%s' 'Which disk do you want to mount? ';
+	read disk;
+	if echo $disk | grep '^loop'; then 
+		disk_postfix='v';
+	else
+		disk_postfix='';
+	fi
+	printf '%s' 'What is it? [?] ';
+	read type;
+	if [[ ${type} == \? ]]; then
+		echo ${mount_points[*]};
+		read type;
+	fi
+	while [[ -e ${root}${type}/${base_number}${disk_postfix} ]]; do
+		base_number=$(( base_number + 1 ));
+	done
+	mkdir -v ${root}${type}/${base_number}${disk_postfix};
+	mount -v ${dev}/${disk} ${root}${type}/${base_number}${disk_postfix} &&
+	ln -sv ${root}${type}/${base_number}${disk_postfix} ${mnt}/${type}${base_number}${disk_postfix} &&
+	echo "${disk} was mounted succesfully at ${root}${type}/${base_number}${disk_postfix}.";
+	exit 0;
+}
+
+main
