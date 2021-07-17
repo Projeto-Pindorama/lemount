@@ -32,9 +32,9 @@ main(){
 	if [[ -n `ls -A ${root}${type}/${base_number}${disk_postfix}` ]]; then
 		while [[ -e ${root}${type}/${base_number}${disk_postfix} ]]; do
 			base_number=$(( base_number + 1 ));
-		done
-		mkdir -v ${root}${type}/${base_number}${disk_postfix};
+		done	
 	fi	
+	mkdir -v ${root}${type}/${base_number}${disk_postfix};
 	mount -v ${dev}/${disk} ${root}${type}/${base_number}${disk_postfix} &&
 	ln -sv ${root}${type}/${base_number}${disk_postfix} ${mnt}/${type}${base_number}${disk_postfix} &&
 	echo "${disk} was mounted succesfully at ${root}${type}/${base_number}${disk_postfix}.";
