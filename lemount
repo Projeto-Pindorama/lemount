@@ -11,7 +11,7 @@ base_number='0'
 main(){
 	printf '%s' 'Creating mount points...' &
 	for (( i=0; i<${#mount_points}; i++ )){
-		test ! -e && mkdir ${root}${mount_points[${i}]};
+		test ! -e ${root}${mount_points[${i}]} && mkdir ${root}${mount_points[${i}]};
 	}
 	printf  '%s\n\n' 'done.'
 	echo 'Available disks:';
@@ -29,6 +29,7 @@ main(){
 		echo ${mount_points[*]};
 		read type;
 	fi
+	test ! -e ${root}${type}/${base_number}${disk_postfix} && mkdir -v ${root}${type}/${base_number}${disk_postfix};
 	if [[ -n `ls -A ${root}${type}/${base_number}${disk_postfix}` ]]; then
 		while [[ -e ${root}${type}/${base_number}${disk_postfix} ]]; do
 			base_number=$(( base_number + 1 ));
