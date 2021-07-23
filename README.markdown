@@ -8,7 +8,7 @@ This is just a prototype as a proof-of-concept. I intend to write the final `lem
 
 I've made it for mouting disks in a more elegant way.  
 Tired of creating multiple directories in `/` and `/mnt`, i created this script.  
-Instead of mounting `/dev/sdXY` in `/mnt/diskX`, you can mount it in `/dsk/Xp` (`p` corresponds to the postfix, i will explain it later).  
+Instead of mounting `/dev/sdXY` in `/mnt/diskY`, you can mount it in `/dsk/Yp` (`p` corresponds to the postfix, i will explain it later).  
 |![img/Screenshot_2021-07-14_09-16-21.png](img/Screenshot_2021-07-14_09-16-21.png) |
 |:--:|
 | *A demonstration using a NTFS-formatted physical disk.* |
