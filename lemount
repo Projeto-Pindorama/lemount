@@ -29,13 +29,13 @@ main(){
 		echo ${mount_points[*]};
 		read type;
 	fi
-	test ! -e "${root}${type}/${base_number}${disk_postfix}" && mkdir -v "${root}${type}/${base_number}${disk_postfix}";
-	if [ -n `ls -A "${root}${type}/${base_number}${disk_postfix}" 2> /dev/null` ]; then
+	if [ ! -z `ls -A "${root}${type}/${base_number}${disk_postfix}" 2> /dev/null` ]; then
 		while [ -e "${root}${type}/${base_number}${disk_postfix}" ]; do
 			base_number=$(( base_number + 1 ));
 		done
 		mkdir -v "${root}${type}/${base_number}${disk_postfix}";
 	fi
+	test ! -e "${root}${type}/${base_number}${disk_postfix}" && mkdir -v "${root}${type}/${base_number}${disk_postfix}";
 	mount -v "${dev}/${disk}" "${root}${type}/${base_number}${disk_postfix}" &&
 	if [ -z `ls -A "${mnt}/${type}${base_number}${disk_postfix}" 2> /dev/null` ]; then
 		ln -sv "${root}${type}/${base_number}${disk_postfix}" "${mnt}/${type}${base_number}${disk_postfix}";
