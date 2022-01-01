@@ -2,46 +2,170 @@
 # lemount - Luiz' extensions for mount
 # This is a prototype made with Korn Shell, probabily i will rewrite this in Go.
 
-root=/
-dev=/dev
-mnt=/mnt
-mount_points=(dsk usb cdrom);
-base_number='0'
+# Source configuration file
+source /etc/leconf
 
-main(){
-	printf '%s' 'Creating mount points...' &
-	for (( i=0; i<${#mount_points}; i++ )){
-		test ! -e ${root}${mount_points[${i}]} && mkdir ${root}${mount_points[${i}]};
-	}
-	printf  '%s\n\n' 'done.'
-	echo 'Available disks:';
-	fdisk -l;
-	printf '%s' 'Which disk do you want to mount? ';
-	read disk;
-	if echo $disk | grep '^loop'; then 
-		disk_postfix='v';
+# Constants etc 
+base_number='0'
+program_name="$0" # We need to get it outside a function, so that $0 won't have
+		  # the function identifier as its content
+
+function main {
+	if [ -z "$@" ]; then
+		interactive_prompt
 	else
-		disk_postfix='';
+		noninteractive $@
 	fi
-	printf '%s' 'What is it? [?] ';
-	read type;
-	if [[ ${type} == \? ]]; then
-		echo ${mount_points[*]};
-		read type;
-	fi
-	if [ ! -z `ls -A "${root}${type}/${base_number}${disk_postfix}" 2> /dev/null` ]; then
-		while [ -e "${root}${type}/${base_number}${disk_postfix}" ]; do
-			base_number=$(( base_number + 1 ));
-		done
-		mkdir -v "${root}${type}/${base_number}${disk_postfix}";
-	fi
-	test ! -e "${root}${type}/${base_number}${disk_postfix}" && mkdir -v "${root}${type}/${base_number}${disk_postfix}";
-	mount -v "${dev}/${disk}" "${root}${type}/${base_number}${disk_postfix}" &&
-	if [ -z `ls -A "${mnt}/${type}${base_number}${disk_postfix}" 2> /dev/null` ]; then
-		ln -sv "${root}${type}/${base_number}${disk_postfix}" "${mnt}/${type}${base_number}${disk_postfix}";
-	fi
-	echo "${disk} was mounted succesfully at ${root}${type}/${base_number}${disk_postfix}.";
+}
+
+function interactive_prompt {
+	create_mounting_points
+	# List disks with fdisk
+	printf 'Available disks:'
+	fdisk -l
+	printf '%s' 'Which disk do you want to mount? '
+	read disk_name
+	disk=$(realpath $disk_name); unset disk_name
+	
+	check_virtual_disk "$disk"
+	
+	PS3='What is it? '
+	select type in ${mount_points[@]}; do
+		type=$type
+		break
+	done	
+	printf 'Disk %s is %s%s\n' "$disk" "$type" "$disk_postfix" 1>&2
+	
+	count_lemounted_disks	
+	
+	mount_block "${disk}" "${root}${type}/${base_number}${disk_postfix}" &&
+	
+	link_from_type2mnt
+
+	printf '%s was mounted succesfully at %s.\n' "${disk}" \
+		"${root}${type}/${base_number}${disk_postfix}" 1>&2
+
 	exit 0;
 }
 
-main
+function noninteractive {
+	while getopts ":D:t:" options; do
+			case "$options" in
+					D) export disk="$OPTARG" ;;
+					t) export type="$OPTARG" ;;
+					\?|h) print_help "$OPTARG" ;;
+			esac
+	done
+	shift $(( OPTIND -1 ))
+	return 0
+}
+
+function print_help {
+	printf '%s: illegal option "%s"
+[usage]: %s -D /dev/disk1 -t %s
+' $program_name $1 $program_name "$(echo ${mount_points[*]} | tr ' ' '|')"
+	exit 1 # exit immediatly
+}
+
+function create_mounting_points {
+	echo 'Creating mount points...' 1>&2 &
+	for (( i=0; i<${#mount_points}; i++ )){
+		test ! -e ${root}${mount_points[${i}]} && mkdir -pv ${root}${mount_points[${i}]}
+	}
+	printf  '%s\n\n' 'done.' 1>&2
+
+}
+
+function check_virtual_disk {
+	# There's possible a better way of doing this, but for now this works
+	# and I won't be changing.
+
+	# Takes $disk as argument
+	# By block name
+	if echo "$1" | grep '^loop'; then
+		export disk_postfix='v'
+	# By file extension (only *.{img,IMG} for now)
+	elif echo "$1" | grep -i 'img'; then
+		export disk_postfix='v'
+		export isloop='y'
+	else
+		export disk_postfix=''
+	fi
+}
+
+
+function mount_block {
+# Kinda "gambiarrado", but since export -f isn't avaible and typeset -xf wasn't
+# working either, I decided to do this.
+	printf 'debugging:\ndisk=%s\ntarget=%s\n' "$1" "$2" 1>&2
+	if [ isloop == 'y' ]; then
+		# This may will break compatibility with other UNIXes, but who
+		# cares? This is used officially only on Copacabana.
+		mount -v -o loop "$1" "$2"
+	else
+		mount -v "$1" "$2"
+	fi
+	return 0
+}
+
+function count_lemounted_disks {
+	# This function counts directories already created and creates a new
+	# directory for the new mounted disk
+
+	# Check if the variables are being actually exported
+	printf \
+		'%s() debugging:\nroot=%s\ntype=%s\nbase_number=%s\ndisk_postfix="%s"\n' \
+	       		"$0" "$root" "$type" "$base_number" "$disk_postfix" 1>&2
+
+		  # ls -A the disk directory, if it doesn't exist yet, the
+		  # errors will be supressed by the stderr redirect to /dev/null
+	if [ ! -z $(ls -A "${root}${type}/${base_number}${disk_postfix}" \
+		2>/dev/null) ]; then
+		for ((;;)); do
+			# if a disk with the base_number is already
+			# mounted/existent, then try one more
+			if [ -e "${root}${type}/${base_number}${disk_postfix}" ]; then
+				base_number=$(( base_number + 1 ))
+			else
+				break
+			fi
+		done
+	fi
+
+	# if the disk mounting target, create it
+	test ! -e "${root}${type}/${base_number}${disk_postfix}" \
+		&& mkdir -pv "${root}${type}/${base_number}${disk_postfix}"
+
+	return 0
+}
+
+function link_from_type2mnt {
+	# Check if the variables are being actually exported
+	printf \
+		'%s() debugging:\nroot=%s\ntype=%s\nbase_number=%s\ndisk_postfix="%s"\n' \
+	       		"$0" "$root" "$type" "$base_number" "$disk_postfix" 1>&2
+
+	# If there's no link from the disk original target to /mnt, do it
+	if [ -z $(ls -A "${mnt}/${type}${base_number}${disk_postfix}" \
+	       	2>/dev/null) ]; then
+		ln -sv "${root}${type}/${base_number}${disk_postfix}" "${mnt}/${type}${base_number}${disk_postfix}";
+	fi
+	
+	return 0
+
+}
+
+function realpath {
+  # From https://git.io/mitzune
+  
+  # ./sources.txt -> sources.txt
+  file_basename=`basename $1`
+  # ./sources.txt -> .
+  file_dirname=`dirname $1`
+	# get the absolute directory name
+	# example: ./sources.txt -> /usr/src/copacabana-repo/sources.txt
+	# cd ./; pwd -> /usr/src/copacabana-repo
+  echo "`cd "${file_dirname}"; pwd`/${file_basename}"
+}
+
+main $@
