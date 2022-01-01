@@ -36,7 +36,7 @@ I've made thinking in it's usage at Copacabana OpenLinux, but in fact you can us
 
 ## Acknowledgements
 
-Thanks CallTheSamu, ArthurBacci, Sevla and mach-o man for suggesting names and helping me polishing the idea.
+Thanks CallTheSamu, ArthurBacci, Sevla and Baux for suggesting names and helping me polishing the idea.
 
 ## License
 
