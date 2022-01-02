@@ -1,4 +1,4 @@
-# lemount
+# L.E.`mount`
 
 A front-end to `mount`(8) which makes mounting disks something more elegant.  
 It's loosely inspired in how Solaris used to manage disks back in the day, but implemented in it's own way.  
@@ -23,6 +23,11 @@ In this case, it's `loop0`.
 Then, it will question me about what type of media it is. Is it a disk? a USB? a CD-ROM Drive?  
 Since it's a disk, i can answer with `dsk`.  
 After this, it will mount my disk at `/dsk/0v`; in which `dsk` is the type, `0` is the disk idenfier (in this case, as there weren't any other disks mounted before, it will be `0`) and `v` is the postfix, it indicates (`v`)irtual.  
+
+## Get L.E.`mount`
+
+Releases and VCS snapshots can be found at `get.pindorama.dob.jp`.  
+[*http://get.pindorama.dob.jp/lemount*](https://get.pindorama.dob.jp/lemount)  
 
 ## TODO
 
