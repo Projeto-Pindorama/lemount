@@ -45,12 +45,13 @@ function interactive_prompt {
 }
 
 function noninteractive {
+	# getopts
 	while getopts ":D:t:" options; do
-			case "$options" in
-					D) export disk_name="$OPTARG" ;;
-					t) export type="$OPTARG" ;;
-					\?|h) print_help "$OPTARG" ;;
-			esac
+		case "$options" in
+			D) export disk_name="$OPTARG" ;;
+			t) export type="$OPTARG" ;;
+			\?|h) print_help "$OPTARG" ;;
+		esac
 	done
 	shift $(( OPTIND -1 ))
 
@@ -112,7 +113,7 @@ function mount_block {
 	else
 		mount -v "$1" "$2"
 	fi
-	return 0
+	return $?
 }
 
 function count_lemounted_disks {
@@ -158,7 +159,7 @@ function link_from_type2mnt {
 		ln -sv "${root}${type}/${base_number}${disk_postfix}" "${mnt}/${type}${base_number}${disk_postfix}";
 	fi
 	
-	return 0
+	return $?
 
 }
 
