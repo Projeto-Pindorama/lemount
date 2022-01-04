@@ -77,7 +77,7 @@ function print_help {
 function create_mounting_points {
 	echo 'Creating mount points...' 1>&2 &
 	for (( i=0; i<${#mount_points}; i++ )){
-		test ! -e ${root}${mount_points[${i}]} && mkdir -pv ${root}${mount_points[${i}]}
+		test ! -e ${root}${mount_points[${i}]} && mkdir -pv ${root}${mount_points[${i}]} 1>&2
 	}
 	printf  '%s\n\n' 'done.' 1>&2
 
@@ -139,9 +139,9 @@ function count_lemounted_disks {
 		done
 	fi
 
-	# if the disk mounting target, create it
+	# if the disk mounting target don't exist, create it
 	test ! -e "${root}${type}/${base_number}${disk_postfix}" \
-		&& mkdir -pv "${root}${type}/${base_number}${disk_postfix}"
+		&& mkdir -pv "${root}${type}/${base_number}${disk_postfix}" 1>&2
 
 	return 0
 }
