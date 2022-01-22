@@ -38,8 +38,8 @@ function interactive_prompt {
 	
 	count_lemounted_disks	
 	
-	mount_block "${disk}" "${root}${type}/${base_number}${disk_postfix}" &&
-	link_from_type2mnt
+	mount_block "${disk}" "${root}${type}/${base_number}${disk_postfix}" \
+		&& link_from_type2mnt
 
 	success
 }
@@ -62,10 +62,9 @@ function noninteractive {
 	
 	count_lemounted_disks	
 	
-	mount_block "${disk}" "${root}${type}/${base_number}${disk_postfix}" &&
-	link_from_type2mnt
-	
-	success
+	mount_block "${disk}" "${root}${type}/${base_number}${disk_postfix}" \
+		&& link_from_type2mnt \
+		&& success
 }
 
 function print_help {
@@ -112,7 +111,7 @@ function mount_block {
 	else
 		mount -v "$1" "$2"
 	fi
-	return 0
+	return $?
 }
 
 function count_lemounted_disks {
