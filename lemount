@@ -89,7 +89,7 @@ function check_virtual_disk {
 
 	# Takes $disk as argument
 	# By block name
-	if echo "$1" | grep '^loop'; then
+	if echo "$(basename $1)" | grep '^loop'; then
 		export disk_postfix='v'
 	# By file extension (only *.{img,IMG} for now)
 	elif echo "$1" | grep -i 'img'; then
