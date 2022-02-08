@@ -1,4 +1,4 @@
 root=/
 dev=/dev
 mnt=/mnt
-mount_points=(dsk usb cdrom);
+mount_points=(dsk usb cdrom)
