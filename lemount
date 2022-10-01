@@ -1,14 +1,17 @@
-#!/bin/ksh
+#!/usr/bin/env ksh93
 # lemount - Luiz' extensions for mount
-# This is a prototype made with Korn Shell, probabily i will rewrite this in Go.
+# This is a prototype made with Korn Shell, probabily I will rewrite this in Go.
 
 # Source configuration file
 source /etc/leconf
 
-# Constants etc 
+# For some reason, trap isn't catching function errors...
+# So, at least on my version of Korn Shell, this isn't working for now.
+trap errare ERR
+
 base_number='0'
 program_name="$0" # We need to get it outside a function, so that $0 won't have
-		  # the function identifier as its content
+		  # the function identifier as its content.
 
 function main {
 	if [ -z "$@" ]; then
@@ -39,7 +42,7 @@ function interactive_prompt {
 	count_lemounted_disks	
 	
 	mount_block "${disk}" "${root}${type}/${base_number}${disk_postfix}" \
-		&& link_from_type2mnt
+	&& link_from_type2mnt
 
 	success
 }
@@ -104,15 +107,18 @@ function check_virtual_disk {
 function mount_block {
 # Kinda "gambiarrado", but since export -f isn't avaible and typeset -xf wasn't
 # working either, I decided to do this.
-	printf '%s() debugging:\ndisk=%s\ntarget=%s\n' "$0" "$1" "$2" 1>&2
+	printdbg '%s() debugging:\ndisk=%s\ntarget=%s\n' "$0" "$1" "$2" 1>&2
 	if [ isloop == 'y' ]; then
 		# This may will break compatibility with other UNIXes, but who
 		# cares? This is used officially only on Copacabana.
-		mount -v -o loop "$1" "$2"
+		# Also, for disks which have multiple partitions, it would be
+		# cool to re-display them offering to mount again if needed.
+		mount -v -o loop "$1" "$2"; ec=$?
 	else
-		mount -v "$1" "$2"
+		mount -v "$1" "$2"; ec=$?
 	fi
-	return $?
+
+	return $ec
 }
 
 function count_lemounted_disks {
@@ -120,7 +126,7 @@ function count_lemounted_disks {
 	# directory for the new mounted disk
 
 	# Check if the variables are being actually exported
-	printf \
+	printdbg \
 		'%s() debugging:\nroot=%s\ntype=%s\nbase_number=%s\ndisk_postfix="%s"\n' \
 	       		"$0" "$root" "$type" "$base_number" "$disk_postfix" 1>&2
 
@@ -148,24 +154,28 @@ function count_lemounted_disks {
 
 function link_from_type2mnt {
 	# Check if the variables are being actually exported
-	printf \
+	printdbg \
 		'%s() debugging:\nroot=%s\ntype=%s\nbase_number=%s\ndisk_postfix="%s"\n' \
 	       		"$0" "$root" "$type" "$base_number" "$disk_postfix" 1>&2
 
 	# If there's no link from the disk original target to /mnt, do it
 	if [ -z $(ls -A "${mnt}/${type}${base_number}${disk_postfix}" \
 	       	2>/dev/null) ]; then
-		ln -sv "${root}${type}/${base_number}${disk_postfix}" "${mnt}/${type}${base_number}${disk_postfix}";
+			{ 
+			        test -d "${mnt}/${type}${base_number}${disk_postfix}" \
+		       	        || mkdir "${mnt}/${type}${base_number}${disk_postfix}" 
+			} \
+		       	&& mount -o bind "${root}${type}/${base_number}${disk_postfix}" \
+		       	        "${mnt}/${type}${base_number}${disk_postfix}"
 	fi
-	
-	return $?
-
 }
 
 function success {
 	printf '%s was mounted succesfully at %s.\n' "${disk}" \
 		"${root}${type}/${base_number}${disk_postfix}" 1>&2
-	echo "ledisk=${root}${type}/${base_number}${disk_postfix}"
+	echo "ledisk_${type}${base_number}${disk_postfix}=${root}${type}/${base_number}${disk_postfix}"
+	
+	return 0
 }
 
 function realpath {
@@ -179,6 +189,23 @@ function realpath {
 	# example: ./sources.txt -> /usr/src/copacabana-repo/sources.txt
 	# cd ./; pwd -> /usr/src/copacabana-repo
   echo "`cd "${file_dirname}"; pwd`/${file_basename}"
+}
+
+function printdbg {
+  # Prints only if debugging is enabled.
+  if [ "$debugging" == 'y' ]; then
+	  printf "$@"
+  else
+	  return 0 # Do nothing, literally.
+  fi
+}
+
+# Errare humanum est.
+function errare {
+	rc="$?"
+	printf 'Error code: %s\n' "$rc"
+	rmdir -v "${root}${type}/${base_number}${disk_postfix}"
+	exit "$rc"
 }
 
 main $@
