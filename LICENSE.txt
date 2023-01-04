@@ -1,5 +1,5 @@
-Copyright(C) 2021 - 2022  Luiz Antônio Rangel <luiz.antonio.rangel@outlook.com.br>, Brazil.
-Copyright(C) 2021 - 2022  Projeto Pindorama, Brazil.
+Copyright(C) 2021 - 2023  Luiz Antônio Rangel <luiz.antonio.rangel@outlook.com.br>, Brazil.
+Copyright(C) 2021 - 2023  Projeto Pindorama, Brazil.
 
 All rights reserved.
 
