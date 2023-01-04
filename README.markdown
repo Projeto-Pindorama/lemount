@@ -19,7 +19,7 @@ Instead of mounting `/dev/sdXY` in `/mnt/diskY`, you can mount it in `/dsk/Yp` (
 Let's suppose, hypothetically speaking, that i have a virtual disk image, i will call it `DISK.img` and i want to mount it.  
 I first will simply expose the disk to the system, using `losetup`(8).  
 Then, i will run `lemount`.  
-At the first question, which is "Which disk do you want to mount?", will respond it with my disk identifier that i probabily saw when it listed my disk.  
+At the first question, which is "Which disk do you want to mount?", will respond it with my disk identifier that I probably saw when it listed my disk.  
 In this case, it's `loop0`.  
 Then, it will question me about what type of media it is. Is it a disk? a USB? a CD-ROM Drive?  
 Since it's a disk, i can answer with `dsk`.  
@@ -27,8 +27,8 @@ After this, it will mount my disk at `/dsk/0v`; in which `dsk` is the type, `0` 
 
 ## Get L.E.`mount`
 
-Releases and VCS snapshots can be found at `get.pindorama.dob.jp`.  
-[*http://get.pindorama.dob.jp/lemount*](https://get.pindorama.dob.jp/lemount)  
+Releases can be found at `pindorama.dob.jp/pub`.  
+[*http://pindorama.dob.jp/pub/lemount*](http://pindorama.dob.jp/pub/lemount)  
 
 ## TODO
 
@@ -38,7 +38,15 @@ Releases and VCS snapshots can be found at `get.pindorama.dob.jp`.
 
 ## Used By
 
-I've made thinking in it's usage at Copacabana OpenLinux, but in fact you can use it in any Linux box.
+I've made thinking in it's usage at [Copacabana Linux](http://copacabana.pindorama.dob.jp), but in fact you can use it in any Linux box.
+
+### Dependencies
+
+- Korn Shell 93;
+- Basic UNIX® utilities ([Heirloom
+  NG](https://github.com/Projeto-Pindorama/heirloom-ng) works fine without
+verbosing enabled, at least for now);
+- Util-Linux.
 
 ## Acknowledgements
 
