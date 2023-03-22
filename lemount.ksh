@@ -7,7 +7,7 @@ source /etc/leconf
 
 # For some reason, trap isn't catching function errors...
 # So, at least on my version of Korn Shell, this isn't working for now.
-trap errare ERR
+trap '{ errare "Error at function $0"; }' ERR SIGINT
 
 base_number='0'
 program_name="$0" # We need to get it outside a function, so that $0 won't have
@@ -74,14 +74,14 @@ function noninteractive {
 function print_help {
 	printf '%s: illegal option "%s"\n[usage]: %s -D /dev/disk1 -t %s\n' \
 		$program_name $1 $program_name "$(echo ${mount_points[*]} | tr ' ' '|')"
-	exit 1 # exit immediatly (I hope)
 }
 
 function create_mounting_points {
 	echo 'Creating mount points...' 1>&2 &
-	for (( i=0; i<${#mount_points}; i++ )){
-		test ! -e ${root}${mount_points[${i}]} && mkdir -pv ${root}${mount_points[${i}]} 1>&2
-	}
+	for (( i=0; i<${#mount_points[@]}; i++ )); do
+		test ! -e "${root}${mount_points[${i}]}" \
+		&& mkdir -p "${root}${mount_points[${i}]}" 1>&2
+	done
 	printf  '%s\n\n' 'done.' 1>&2
 
 }
@@ -113,9 +113,9 @@ function mount_block {
 		# cares? This is used officially only on Copacabana.
 		# Also, for disks which have multiple partitions, it would be
 		# cool to re-display them offering to mount again if needed.
-		mount -v -o loop "$1" "$2"; ec=$?
+		mount -o loop "$1" "$2"; ec=$?
 	else
-		mount -v "$1" "$2"; ec=$?
+		mount "$1" "$2"; ec=$?
 	fi
 
 	return $ec
@@ -131,11 +131,12 @@ function count_lemounted_disks {
 	       		"$0" "$root" "$type" "$base_number" "$disk_postfix" 1>&2
 
 		  # ls -A the disk directory, if it doesn't exist yet, the
-		  # errors will be supressed by the stderr redirect to /dev/null
+		  # errors will be supressed by redirecting the stderr to
+		  # /dev/null.
 	if [ ! -z $(ls -A "${root}${type}/${base_number}${disk_postfix}" \
 		2>/dev/null) ]; then
 		for ((;;)); do
-			# if a disk with the base_number is already
+			# If a disk with the base_number is already
 			# mounted/existent, then try one more
 			if [ -e "${root}${type}/${base_number}${disk_postfix}" ]; then
 				base_number=$(( base_number + 1 ))
@@ -145,9 +146,9 @@ function count_lemounted_disks {
 		done
 	fi
 
-	# if the disk mounting target don't exist, create it
+	# If the disk mounting target don't exist, create it
 	test ! -e "${root}${type}/${base_number}${disk_postfix}" \
-		&& mkdir -pv "${root}${type}/${base_number}${disk_postfix}" 1>&2
+		&& mkdir -p "${root}${type}/${base_number}${disk_postfix}" 1>&2
 
 	return 0
 }
@@ -182,9 +183,9 @@ function realpath {
   # From https://git.io/mitzune
   
   # ./sources.txt -> sources.txt
-  file_basename=`basename $1`
+  file_basename="$(basename "$1")"
   # ./sources.txt -> .
-  file_dirname=`dirname $1`
+  file_dirname="$(dirname "$1")"
 	# get the absolute directory name
 	# example: ./sources.txt -> /usr/src/copacabana-repo/sources.txt
 	# cd ./; pwd -> /usr/src/copacabana-repo
@@ -193,7 +194,7 @@ function realpath {
 
 function printdbg {
   # Prints only if debugging is enabled.
-  if [ "$debugging" == 'y' ]; then
+  if $(echo "$debugging" | grep -i '^y'); then
 	  printf "$@"
   else
 	  return 0 # Do nothing, literally.
@@ -203,8 +204,11 @@ function printdbg {
 # Errare humanum est.
 function errare {
 	rc="$?"
-	printf 'Error code: %s\n' "$rc"
-	rmdir -v "${root}${type}/${base_number}${disk_postfix}"
+	printf 'Exit code: %s\n' "$rc"
+	# Delete the directory only if it in fact exists, to avoid the
+	# "rmdir: //0: No such file or directory" error.
+	[ -z "${root}${type}/${base_number}${disk_postfix}" ] \
+	       && rmdir "${root}${type}/${base_number}${disk_postfix}"
 	exit "$rc"
 }
 
