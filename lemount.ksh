@@ -25,9 +25,9 @@ function main {
 function interactive_prompt {
 	create_mounting_points
 	# List disks with fdisk
-	printf 'Available disks:'
-	fdisk -l
-	printf '%s' 'Which disk do you want to mount? '
+	printmsg 'Available disks:'
+	fdisk -l 1>&2
+	printmsg 'Which disk do you want to mount? '
 	read disk_name
 	disk=$(realpath $disk_name); unset disk_name
 	check_virtual_disk "$disk"
@@ -37,7 +37,7 @@ function interactive_prompt {
 		type=$type
 		break
 	done	
-	printf 'Disk %s is %s%s\n' "$disk" "$type" "$disk_postfix" 1>&2
+	printmsg 'Disk %s is %s%s\n' "$disk" "$type" "$disk_postfix" 1>&2
 	
 	count_lemounted_disks	
 	
@@ -62,7 +62,7 @@ function noninteractive {
 	
 	disk=$(realpath $disk_name); unset disk_name
 	check_virtual_disk "$disk"
-	printf 'Disk %s is %s%s\n' "$disk" "$type" "$disk_postfix" 1>&2
+	printmsg 'Disk %s is %s%s\n' "$disk" "$type" "$disk_postfix"
 	
 	count_lemounted_disks	
 	
@@ -72,17 +72,17 @@ function noninteractive {
 }
 
 function print_help {
-	printf '%s: illegal option "%s"\n[usage]: %s -D /dev/disk1 -t %s\n' \
+	printmsg '%s: illegal option "%s"\n[usage]: %s -D /dev/disk1 -t %s\n' \
 		$program_name $1 $program_name "$(echo ${mount_points[*]} | tr ' ' '|')"
 }
 
 function create_mounting_points {
-	echo 'Creating mount points...' 1>&2 &
+	printmsg 'Creating mount points...\n' 1>&2 &
 	for (( i=0; i<${#mount_points[@]}; i++ )); do
 		test ! -e "${root}${mount_points[${i}]}" \
 		&& mkdir -p "${root}${mount_points[${i}]}" 1>&2
 	done
-	printf  '%s\n\n' 'done.' 1>&2
+	printmsg  '%s\n\n' 'done.'
 
 }
 
@@ -92,10 +92,10 @@ function check_virtual_disk {
 
 	# Takes $disk as argument
 	# By block name
-	if echo "$(basename $1)" | grep '^loop'; then
+	if echo "${1##*/}" | grep '^loop' 2>&1 > /dev/null; then
 		export disk_postfix='v'
 	# By file extension (only *.{img,IMG} for now)
-	elif echo "$1" | grep -i 'img'; then
+	elif echo "$1" | grep -i 'img' 2>&1 > /dev/null; then
 		export disk_postfix='v'
 		export isloop='y'
 	else
@@ -172,9 +172,9 @@ function link_from_type2mnt {
 }
 
 function success {
-	printf '%s was mounted succesfully at %s.\n' "${disk}" \
-		"${root}${type}/${base_number}${disk_postfix}" 1>&2
-	echo "ledisk_${type}${base_number}${disk_postfix}=${root}${type}/${base_number}${disk_postfix}"
+	printmsg '%s was mounted succesfully at %s.\n' "${disk}" \
+		"${root}${type}/${base_number}${disk_postfix}"
+	echo "ledisk=${root}${type}/${base_number}${disk_postfix}"
 	
 	return 0
 }
@@ -189,7 +189,13 @@ function realpath {
 	# get the absolute directory name
 	# example: ./sources.txt -> /usr/src/copacabana-repo/sources.txt
 	# cd ./; pwd -> /usr/src/copacabana-repo
-  echo "`cd "${file_dirname}"; pwd`/${file_basename}"
+  echo "$(cd "${file_dirname}"; pwd)/${file_basename}"
+}
+
+# printf(1), but for stderr per default.
+# This helps us a lot when eval'ng $ledisk on a script.
+function printmsg {
+	printf "$@" 1>&2;
 }
 
 function printdbg {
