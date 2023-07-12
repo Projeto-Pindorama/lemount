@@ -71,11 +71,6 @@ function noninteractive {
 		&& success
 }
 
-function print_help {
-	printmsg '%s: illegal option "%s"\n[usage]: %s -D /dev/disk1 -t %s\n' \
-		$program_name $1 $program_name "$(echo ${mount_points[*]} | tr ' ' '|')"
-}
-
 function create_mounting_points {
 	printmsg 'Creating mount points...\n' 1>&2 &
 	for (( i=0; i<${#mount_points[@]}; i++ )); do
@@ -101,24 +96,6 @@ function check_virtual_disk {
 	else
 		export disk_postfix=''
 	fi
-}
-
-
-function mount_block {
-# Kinda "gambiarrado", but since export -f isn't avaible and typeset -xf wasn't
-# working either, I decided to do this.
-	printdbg '%s() debugging:\ndisk=%s\ntarget=%s\n' "$0" "$1" "$2" 1>&2
-	if [ isloop == 'y' ]; then
-		# This may will break compatibility with other UNIXes, but who
-		# cares? This is used officially only on Copacabana.
-		# Also, for disks which have multiple partitions, it would be
-		# cool to re-display them offering to mount again if needed.
-		mount -o loop "$1" "$2"; ec=$?
-	else
-		mount "$1" "$2"; ec=$?
-	fi
-
-	return $ec
 }
 
 function count_lemounted_disks {
@@ -151,6 +128,24 @@ function count_lemounted_disks {
 		&& mkdir -p "${root}${type}/${base_number}${disk_postfix}" 1>&2
 
 	return 0
+}
+
+
+function mount_block {
+# Kinda "gambiarrado", but since export -f isn't avaible and typeset -xf wasn't
+# working either, I decided to do this.
+	printdbg '%s() debugging:\ndisk=%s\ntarget=%s\n' "$0" "$1" "$2" 1>&2
+	if [ isloop == 'y' ]; then
+		# This may will break compatibility with other UNIXes, but who
+		# cares? This is used officially only on Copacabana.
+		# Also, for disks which have multiple partitions, it would be
+		# cool to re-display them offering to mount again if needed.
+		mount -o loop "$1" "$2"; ec=$?
+	else
+		mount "$1" "$2"; ec=$?
+	fi
+
+	return $ec
 }
 
 function link_from_type2mnt {
@@ -192,6 +187,17 @@ function realpath {
   echo "$(cd "${file_dirname}"; pwd)/${file_basename}"
 }
 
+# Errare humanum est.
+function errare {
+	rc="$?"
+	printf 'Exit code: %s\n' "$rc"
+	# Delete the directory only if it in fact exists, to avoid the
+	# "rmdir: //0: No such file or directory" error.
+	[ -z "${root}${type}/${base_number}${disk_postfix}" ] \
+	       && rmdir "${root}${type}/${base_number}${disk_postfix}"
+	exit "$rc"
+}
+
 # printf(1), but for stderr per default.
 # This helps us a lot when eval'ng $ledisk on a script.
 function printmsg {
@@ -207,15 +213,9 @@ function printdbg {
   fi
 }
 
-# Errare humanum est.
-function errare {
-	rc="$?"
-	printf 'Exit code: %s\n' "$rc"
-	# Delete the directory only if it in fact exists, to avoid the
-	# "rmdir: //0: No such file or directory" error.
-	[ -z "${root}${type}/${base_number}${disk_postfix}" ] \
-	       && rmdir "${root}${type}/${base_number}${disk_postfix}"
-	exit "$rc"
+function print_help {
+	printmsg '%s: illegal option "%s"\n[usage]: %s -D /dev/disk1 -t %s\n' \
+		$program_name $1 $program_name "$(echo ${mount_points[*]} | tr ' ' '|')"
 }
 
 main $@
