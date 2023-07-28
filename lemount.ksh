@@ -201,13 +201,13 @@ function errare {
 # printf(1), but for stderr per default.
 # This helps us a lot when eval'ng $ledisk on a script.
 function printmsg {
-	printf "$@" 1>&2;
+	printf "$@" 1>&2
 }
 
 function printdbg {
   # Prints only if debugging is enabled.
-  if $(echo "$debugging" | grep -i '^y'); then
-	  printf "$@"
+  if $(echo "$debugging" | grep -i '^y' 1>&2); then
+	  printmsg "$@"
   else
 	  return 0 # Do nothing, literally.
   fi
